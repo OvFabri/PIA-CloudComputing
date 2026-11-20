@@ -1,5 +1,7 @@
 pipeline {
-    agent { label 'medisur-ci' }
+    // La VM-TOOLS funciona como agente único en esta entrega académica.
+    // Solo permitir ramas de colaboradores de confianza en Jenkins.
+    agent any
 
     options {
         skipDefaultCheckout()
@@ -8,11 +10,13 @@ pipeline {
 
     environment {
         RELEASE_VERSION = '1.0.0'
+        GHCR_OWNER = 'ovfabri'
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Obtiene el commit exacto que se analizará y empaquetará.
                 deleteDir()
                 checkout scm
                 sh 'git log -1 --format=%H'
@@ -21,6 +25,7 @@ pipeline {
 
         stage('Pruebas y cobertura') {
             steps {
+                // Fija Bun y exige LCOV para publicar cobertura a SonarQube.
                 sh '''
                     test "$(bun --version)" = "1.4.3"
                     bun test
@@ -43,6 +48,7 @@ pipeline {
             }
             steps {
                 script {
+                    // Community Build analiza main y la rama de demo por separado.
                     env.SONAR_PROJECT_KEY = env.BRANCH_NAME == 'main' ? 'medisur' : 'medisur-demo'
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('SonarQube') {
@@ -65,6 +71,7 @@ pipeline {
                 }
             }
             steps {
+                // Un gate rojo cancela el flujo antes de construir/publicar.
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true, webhookSecretId: 'sonar-webhook'
                 }
@@ -74,6 +81,7 @@ pipeline {
         stage('Construir imagen') {
             when { branch 'main' }
             steps {
+                // La etiqueta contiene versión y SHA del commit, sin latest.
                 script {
                     env.IMAGE_REF = sh(
                         script: 'bash scripts/build-image.sh "$RELEASE_VERSION"',
@@ -86,6 +94,7 @@ pipeline {
         stage('Publicar en GHCR') {
             when { branch 'main' }
             steps {
+                // La credencial vive solo durante login y se pasa por stdin.
                 withCredentials([usernamePassword(
                     credentialsId: 'ghcr-publisher',
                     usernameVariable: 'GHCR_USER',
@@ -101,6 +110,37 @@ pipeline {
                     '''
                 }
                 echo "Imagen publicada: ${env.IMAGE_REF}"
+            }
+        }
+
+        stage('Desplegar y verificar en Kubernetes') {
+            when { branch 'main' }
+            steps {
+                // Usa kubeconfig acotado; rollout o smoke fallido intenta rollback.
+                withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        set -eu
+                        namespace=medisur
+                        deployment=medisur-api
+
+                        kubectl apply -k kubernetes
+                        kubectl -n "$namespace" set image "deployment/$deployment" "api=$IMAGE_REF"
+                        if ! kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=180s; then
+                            echo 'El rollout no quedó listo; se intenta volver a la revisión anterior.' >&2
+                            kubectl -n "$namespace" rollout undo "deployment/$deployment"
+                            kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=180s || true
+                            exit 1
+                        fi
+
+                        node_ip=$(kubectl get nodes -o 'jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                        if ! bun scripts/smoke-test.js "http://$node_ip" "$GIT_COMMIT" "$RELEASE_VERSION"; then
+                            echo 'Falló la prueba de humo; se intenta volver a la revisión anterior.' >&2
+                            kubectl -n "$namespace" rollout undo "deployment/$deployment"
+                            kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=180s || true
+                            exit 1
+                        fi
+                    '''
+                }
             }
         }
     }

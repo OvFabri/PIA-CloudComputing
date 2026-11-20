@@ -1,0 +1,23 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"reqps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":0},"id":1,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (route,status) (rate(http_requests_total{job=\"medisur-api\"}[5m]))","legendFormat":"{{route}} · {{status}}","refId":"A"}],"title":"Peticiones por segundo y respuesta","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percentunit"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":0},"id":2,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum(rate(http_requests_total{job=\"medisur-api\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"medisur-api\"}[5m])), 1)","legendFormat":"errores 5xx","refId":"A"}],"title":"Proporción de errores 5xx","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"s"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":8},"id":3,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"medisur-api\"}[5m])))","legendFormat":"{{route}} p95","refId":"A"}],"title":"Latencia p95 por ruta","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":8},"id":4,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"kube_deployment_status_replicas_available{namespace=\"medisur\",deployment=\"medisur-api\"}","legendFormat":"listas","refId":"A"},{"expr":"kube_deployment_spec_replicas{namespace=\"medisur\",deployment=\"medisur-api\"}","legendFormat":"deseadas","refId":"B"}],"title":"Réplicas listas y deseadas","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":16},"id":5,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"medisur\",pod=~\"medisur-api-.*\"}[10m]))","legendFormat":"{{pod}}","refId":"A"}],"title":"Reinicios por Pod (10 min)","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":16},"id":6,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (version) (http_requests_total{job=\"medisur-api\"})","legendFormat":"{{version}}","refId":"A"}],"title":"Versiones observadas por el servicio","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"cores"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":24},"id":7,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (pod) (kube_pod_container_resource_requests{namespace=\"medisur\",pod=~\"medisur-api-.*\",resource=\"cpu\"})","legendFormat":"{{pod}} solicitado","refId":"A"},{"expr":"sum by (pod) (kube_pod_container_resource_limits{namespace=\"medisur\",pod=~\"medisur-api-.*\",resource=\"cpu\"})","legendFormat":"{{pod}} límite","refId":"B"}],"title":"CPU solicitada y límite por Pod","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"bytes"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":24},"id":8,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (pod) (kube_pod_container_resource_requests{namespace=\"medisur\",pod=~\"medisur-api-.*\",resource=\"memory\"})","legendFormat":"{{pod}} solicitado","refId":"A"},{"expr":"sum by (pod) (kube_pod_container_resource_limits{namespace=\"medisur\",pod=~\"medisur-api-.*\",resource=\"memory\"})","legendFormat":"{{pod}} límite","refId":"B"}],"title":"Memoria solicitada y límite por Pod","type":"timeseries"}
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["medisur", "aplicacion"],
+  "time": {"from":"now-1h","to":"now"},
+  "timezone": "browser",
+  "title": "MediSur · Aplicación",
+  "uid": "medisur-app",
+  "version": 1
+}

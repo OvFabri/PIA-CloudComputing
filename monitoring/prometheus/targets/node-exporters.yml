@@ -1,0 +1,6 @@
+- targets: ["10.23.1.4:9100"]
+  labels:
+    host: VM-TOOLS
+- targets: ["10.23.1.5:9100"]
+  labels:
+    host: VM-K8S

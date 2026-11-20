@@ -2,3 +2,8 @@
 .env.*
 coverage/
 .venv/
+/entrega/
+/monitoring/.env
+/monitoring/alertmanager/alertmanager.yml
+/monitoring/alertmanager/secrets/
+/monitoring/prometheus/secrets/

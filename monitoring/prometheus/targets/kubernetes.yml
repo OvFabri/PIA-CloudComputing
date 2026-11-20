@@ -1,0 +1,6 @@
+# El proceso que administre Prometheus desde VM-TOOLS debe alcanzar estos
+# NodePorts por la red privada de Azure. Completar después de crear VM-K8S.
+- targets: ["10.23.1.5:30081"]
+  labels:
+    component: kube-state-metrics
+    host: VM-K8S

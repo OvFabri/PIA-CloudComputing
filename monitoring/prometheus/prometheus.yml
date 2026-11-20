@@ -1,0 +1,71 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: medisur-pilot
+
+rule_files:
+  - /etc/prometheus/rules/medisur-alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+        labels:
+          host: VM-TOOLS
+
+  - job_name: node-exporter
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/node-exporters.yml
+        refresh_interval: 30s
+
+  - job_name: kube-state-metrics
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/kubernetes.yml
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [component]
+        regex: kube-state-metrics
+        action: keep
+
+  - job_name: medisur-api
+    metrics_path: /metrics
+    scheme: https
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/k8s-scraper.token
+    tls_config:
+      ca_file: /etc/prometheus/secrets/k8s-ca.crt
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: https://10.23.1.5:16443
+        bearer_token_file: /etc/prometheus/secrets/k8s-scraper.token
+        tls_config:
+          ca_file: /etc/prometheus/secrets/k8s-ca.crt
+        namespaces:
+          names: [medisur]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: medisur-api
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        regex: http
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name, __meta_kubernetes_pod_container_port_number]
+        separator: ";"
+        regex: (.+);(.+);(.+)
+        replacement: /api/v1/namespaces/$1/pods/$2:$3/proxy/metrics
+        target_label: __metrics_path__
+      - target_label: __address__
+        replacement: 10.23.1.5:16443
