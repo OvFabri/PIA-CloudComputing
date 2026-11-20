@@ -17,7 +17,8 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 0
+      # Keep one replica available while replacing pods that can no longer be pulled.
+      maxUnavailable: 1
   template:
     metadata:
       labels:
