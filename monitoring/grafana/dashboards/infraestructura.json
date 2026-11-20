@@ -1,0 +1,19 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":0},"id":1,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"100 - (avg by (host) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])) * 100)","legendFormat":"{{host}}","refId":"A"}],"title":"CPU utilizada por VM","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":0},"id":2,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"100 * (1 - node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})","legendFormat":"{{host}}","refId":"A"}],"title":"Memoria utilizada por VM","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":8},"id":3,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"100 * (1 - node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"})","legendFormat":"{{host}}","refId":"A"}],"title":"Disco raíz utilizado por VM","type":"timeseries"},
+    {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"Bps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":8},"id":4,"options":{"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"multi"}},"targets":[{"expr":"sum by (host) (rate(node_network_receive_bytes_total{job=\"node-exporter\",device!~\"lo|veth.*|cali.*|docker.*\"}[5m]))","legendFormat":"{{host}} recibido","refId":"A"},{"expr":"sum by (host) (rate(node_network_transmit_bytes_total{job=\"node-exporter\",device!~\"lo|veth.*|cali.*|docker.*\"}[5m]))","legendFormat":"{{host}} enviado","refId":"B"}],"title":"Tráfico de red por VM","type":"timeseries"}
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["medisur", "infraestructura"],
+  "time": {"from":"now-1h","to":"now"},
+  "timezone": "browser",
+  "title": "MediSur · Infraestructura",
+  "uid": "medisur-infra",
+  "version": 1
+}

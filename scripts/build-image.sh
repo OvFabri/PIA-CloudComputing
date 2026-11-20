@@ -11,7 +11,8 @@ root=$(git rev-parse --show-toplevel)
 commit=$(git -C "$root" rev-parse HEAD)
 short_commit=${commit:0:7}
 build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-image="ghcr.io/distortr/pia-cloudcomputing:${version}-${short_commit}"
+ghcr_owner=${GHCR_OWNER:-ovfabri}
+image="ghcr.io/${ghcr_owner,,}/pia-cloudcomputing:${version}-${short_commit}"
 
 # Construir el mismo árbol que identifica el SHA, aunque haya cambios locales.
 git -C "$root" archive "$commit" Dockerfile .dockerignore app |

@@ -1,0 +1,39 @@
+groups:
+  - name: medisur-infrastructure
+    rules:
+      - alert: MedisurDiskUsageHigh
+        expr: |
+          100 * (1 - node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}
+          / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco por llenarse en {{ $labels.host }}"
+          description: "El uso de / superó 80 % durante cinco minutos."
+
+  - name: medisur-kubernetes
+    rules:
+      - alert: MedisurContainerRestartLoop
+        expr: |
+          increase(kube_pod_container_status_restarts_total{
+            namespace="medisur",pod=~"medisur-api-.*"}[10m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Contenedor de MediSur con reinicios frecuentes"
+          description: "El contenedor {{ $labels.container }} tuvo más de tres reinicios en diez minutos."
+
+      - alert: MedisurReplicasUnavailable
+        expr: |
+          kube_deployment_status_replicas_available{
+            namespace="medisur",deployment="medisur-api"}
+          < kube_deployment_spec_replicas{
+            namespace="medisur",deployment="medisur-api"}
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MediSur tiene menos réplicas listas que las deseadas"
+          description: "Revisar el despliegue; la diferencia persiste durante cinco minutos."
