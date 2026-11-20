@@ -123,8 +123,15 @@ pipeline {
                         namespace=medisur
                         deployment=medisur-api
 
-                        kubectl apply -k kubernetes
-                        kubectl -n "$namespace" set image "deployment/$deployment" "api=$IMAGE_REF"
+                        # Render the just-built image into a temporary copy before apply.
+                        # Applying the repository's bootstrap tag first can start a rollout
+                        # toward a stale/private tag and block maxUnavailable: 0 deployments.
+                        rendered_dir=$(mktemp -d)
+                        trap 'rm -rf -- "$rendered_dir"' EXIT
+                        cp -R kubernetes/. "$rendered_dir/"
+                        sed -i "/^[[:space:]]*image: ghcr.io\\/ovfabri\\/pia-cloudcomputing:/s|.*|          image: $IMAGE_REF|" "$rendered_dir/deployment.yaml"
+                        grep -F "image: $IMAGE_REF" "$rendered_dir/deployment.yaml"
+                        kubectl apply -k "$rendered_dir"
                         if ! kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=180s; then
                             echo 'El rollout no quedó listo; se intenta volver a la revisión anterior.' >&2
                             kubectl -n "$namespace" rollout undo "deployment/$deployment"
