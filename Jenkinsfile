@@ -140,7 +140,8 @@ pipeline {
                         fi
 
                         node_ip=$(kubectl get nodes -o 'jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-                        if ! bun scripts/smoke-test.js "http://$node_ip" "$GIT_COMMIT" "$RELEASE_VERSION"; then
+                        commit_sha=$(git rev-parse HEAD)
+                        if ! bun scripts/smoke-test.js "http://$node_ip" "$commit_sha" "$RELEASE_VERSION"; then
                             echo 'Falló la prueba de humo; se intenta volver a la revisión anterior.' >&2
                             kubectl -n "$namespace" rollout undo "deployment/$deployment"
                             kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=180s || true
